@@ -259,18 +259,24 @@ def getPageTitlesAPI(config={}, session=None):
         print '    Retrieving titles in the namespace %d' % (namespace)
         apiurl = urlparse(config['api'])
         site = mwclient.Site(apiurl.netloc, apiurl.path.replace("api.php", ""), scheme=apiurl.scheme)
-        for page in site.allpages(namespace=namespace):
-            title = page.name
-            titles.append(title)
-            c += 1
-            yield title
+        try:
+            for page in site.allpages(namespace=namespace):
+                title = page.name
+                titles.append(title)
+                c += 1
+                yield title
 
-        if len(titles) != len(set(titles)):
-            print 'Probably a loop, switching to next namespace'
-            titles = list(set(titles))
+            if len(titles) != len(set(titles)):
+                print 'Probably a loop, switching to next namespace'
+                titles = list(set(titles))
 
+            print '    %d titles retrieved in the namespace %d' % (c, namespace)
             delay(config=config, session=session)
-        print '    %d titles retrieved in the namespace %d' % (c, namespace)
+        except IndexError as e:
+            logerror(config=config, text=u'IndexError from mwclient on namespace %d, retrieved %d titles, exception detail: %s' % (namespace,c,e))
+            print '    Namespace %d is incomplete, only %d titles retrieved' % (namespace,c)
+            delay(config=config, session=session)
+            continue
 
 def getPageTitlesScraper(config={}, session=None):
     """ Scrape the list of page titles from Special:Allpages """
